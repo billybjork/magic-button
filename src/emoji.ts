@@ -5,17 +5,38 @@ export interface Emoji {
   vy: number
   char: string
   size: number
+  spawnTime: number
 }
 
 const EMOJI_POOL = [
-  '🌟', '✨', '💫', '⭐', '🎉', '🎊', '💖', '🔥', '🌈', '🦋',
-  '🍀', '🎈', '🎁', '🌸', '😊', '🚀', '💎', '🌙', '☀️', '🎵'
+  // Creativity & Art
+  '🎨', '🖌️', '✏️', '🖊️', '✒️', '🎭', '🎬', '📸', '🖼️', '📐',
+  // Marketing & Communications
+  '📣', '📢', '💬', '🎯', '📊', '📈', '🏆', '🥇', '📱',
+  // Technology & Innovation
+  '💻', '🖥️', '⌨️', '💡', '⚙️', '🔧', '🌐', '🤖',
+  // Solutions & Productivity
+  '✅', '📋', '🗂️', '📆', '🔑', '📁',
+  // Growth & Value
+  '🚀', '💎', '🔥', '💰', '💵',
+  // Magic & Wonder
+  '✨', '🪄', '🔮', '💫', '⚡', '🌟', '⭐',
+  // Collaboration & Success
+  '🤝', '🧠', '💪', '🎉', '🎊', '🎁'
 ]
 
 const MIN_SPEED = 0.75
 const MAX_SPEED = 1.9
 const MIN_SIZE = 36
 const MAX_SIZE = 72
+const SPAWN_ANIMATION_DURATION = 500 // ms
+
+// Elastic ease-out: overshoots then settles
+function elasticOut(t: number): number {
+  if (t === 0 || t === 1) return t
+  const p = 0.4
+  return Math.pow(2, -10 * t) * Math.sin((t - p / 4) * (2 * Math.PI) / p) + 1
+}
 
 function randomRange(min: number, max: number): number {
   return Math.random() * (max - min) + min
@@ -26,15 +47,29 @@ function randomVelocity(): number {
   return Math.random() < 0.5 ? speed : -speed
 }
 
+const SPAWN_RADIUS_MIN = 150 // Spawn at least this far from button center
+const SPAWN_RADIUS_MAX = 250 // Spawn at most this far from button center
+
 export function createEmoji(canvasWidth: number, canvasHeight: number): Emoji {
   const size = randomRange(MIN_SIZE, MAX_SIZE)
+
+  // Spawn in a ring around the button (which is centered)
+  const centerX = canvasWidth / 2
+  const centerY = canvasHeight / 2
+  const angle = Math.random() * Math.PI * 2
+  const distance = randomRange(SPAWN_RADIUS_MIN, SPAWN_RADIUS_MAX)
+
+  const x = centerX + Math.cos(angle) * distance
+  const y = centerY + Math.sin(angle) * distance
+
   return {
-    x: randomRange(size, canvasWidth - size),
-    y: randomRange(size, canvasHeight - size),
+    x,
+    y,
     vx: randomVelocity(),
     vy: randomVelocity(),
     char: EMOJI_POOL[Math.floor(Math.random() * EMOJI_POOL.length)],
-    size
+    size,
+    spawnTime: performance.now()
   }
 }
 
@@ -62,7 +97,13 @@ export function updateEmoji(emoji: Emoji, canvasWidth: number, canvasHeight: num
 }
 
 export function drawEmoji(ctx: CanvasRenderingContext2D, emoji: Emoji): void {
-  ctx.font = `${emoji.size}px serif`
+  // Calculate spawn animation scale
+  const elapsed = performance.now() - emoji.spawnTime
+  const t = Math.min(elapsed / SPAWN_ANIMATION_DURATION, 1)
+  const scale = elasticOut(t)
+
+  const displaySize = emoji.size * scale
+  ctx.font = `${displaySize}px serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(emoji.char, emoji.x, emoji.y)
