@@ -1,6 +1,6 @@
 import { Emoji, createEmoji, updateEmoji, drawEmoji, bounceOffButton, bounceEmojisOffEachOther } from './emoji'
 
-const BUTTON_RADIUS = 88 // Tuned for visual accuracy
+const BUTTON_RADIUS = 96 // Includes silver rim + small buffer
 
 export class CanvasManager {
   private canvas: HTMLCanvasElement

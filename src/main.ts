@@ -9,8 +9,7 @@ const manager = new CanvasManager(canvas)
 manager.spawnEmojis(5)
 manager.start()
 
-// Spawn more on button click
+// Spawn one emoji on button click
 button.addEventListener('click', () => {
-  const count = Math.floor(Math.random() * 3) + 3 // 3-5 emojis
-  manager.spawnEmojis(count)
+  manager.spawnEmojis(1)
 })
