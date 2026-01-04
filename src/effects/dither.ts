@@ -12,7 +12,7 @@ const BTN_RADIUS_BASE = 135
 const MOBILE_BREAKPOINT = 768
 
 function getScale(): number {
-  return window.innerWidth <= MOBILE_BREAKPOINT ? 0.5 : 1
+  return window.innerWidth <= MOBILE_BREAKPOINT ? 0.75 : 1
 }
 
 export class DitherEffect {

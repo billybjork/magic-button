@@ -27,7 +27,7 @@ const SPAWN_ANIMATION_DURATION = 500 // ms
 const MOBILE_BREAKPOINT = 768
 
 function getScale(): number {
-  return window.innerWidth <= MOBILE_BREAKPOINT ? 0.5 : 1
+  return window.innerWidth <= MOBILE_BREAKPOINT ? 0.75 : 1
 }
 
 // Elastic ease-out: overshoots then settles

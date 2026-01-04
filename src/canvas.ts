@@ -1,10 +1,11 @@
 import { Emoji, createEmoji, updateEmoji, drawEmoji, bounceOffButton, bounceEmojisOffEachOther } from './emoji'
 
 const BUTTON_RADIUS_BASE = 144 // Includes silver rim + small buffer
+const BUTTON_OFFSET_Y_BASE = 12 // Offset collision down to match 3D visual depth
 const MOBILE_BREAKPOINT = 768
 
 function getScale(): number {
-  return window.innerWidth <= MOBILE_BREAKPOINT ? 0.5 : 1
+  return window.innerWidth <= MOBILE_BREAKPOINT ? 0.75 : 1
 }
 
 export class CanvasManager {
@@ -40,9 +41,10 @@ export class CanvasManager {
   }
 
   private update(): void {
+    const scale = getScale()
     const btnX = this.canvas.width / 2
-    const btnY = this.canvas.height / 2
-    const btnRadius = BUTTON_RADIUS_BASE * getScale()
+    const btnY = this.canvas.height / 2 + BUTTON_OFFSET_Y_BASE * scale
+    const btnRadius = BUTTON_RADIUS_BASE * scale
 
     for (const emoji of this.emojis) {
       updateEmoji(emoji, this.canvas.width, this.canvas.height)
