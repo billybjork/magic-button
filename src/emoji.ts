@@ -9,26 +9,20 @@ export interface Emoji {
 }
 
 const EMOJI_POOL = [
-  // Creativity & Art
-  '🎨', '🖌️', '✏️', '🖊️', '✒️', '🎭', '🎬', '📸', '🖼️', '📐',
-  // Marketing & Communications
-  '📣', '📢', '💬', '🎯', '📊', '📈', '🏆', '🥇', '📱',
-  // Technology & Innovation
-  '💻', '🖥️', '⌨️', '💡', '⚙️', '🔧', '🌐', '🤖',
-  // Solutions & Productivity
-  '✅', '📋', '🗂️', '📆', '🔑', '📁',
-  // Growth & Value
-  '🚀', '💎', '🔥', '💰', '💵',
-  // Magic & Wonder
-  '✨', '🪄', '🔮', '💫', '⚡', '🌟', '⭐',
-  // Collaboration & Success
-  '🤝', '🧠', '💪', '🎉', '🎊', '🎁'
+  '😎', '🫡', '🤠', '👾', '🫶', '🙌', '✌️', '🤘', '🤝', '🦾',
+  '👁️', '🧠', '👀', '🤙', '🧑‍💻', '🤳', '👑', '💼', '🍀', '🌱',
+  '🌞', '⚡️', '💥', '🔥', '🍾', '☕️', '🏆', '🎬', '🎧', '🎤',
+  '🎟️', '🧩', '🎯', '🚀', '📱', '💻', '🖥️', '💾', '🎞️', '📺',
+  '🎥', '🎛️', '🎚️', '🧭', '🕹️', '🔋', '💡', '🔌', '💸', '💰',
+  '💎', '🪜', '🛠️', '🔧', '⚙️', '🔮', '🔭', '🧪', '🔑', '🎈',
+  '🛍️', '🎉', '📥', '📬', '📈', '🗃️', '🗂️', '📚', '📝', '🔐',
+  '❤️‍🔥', '⚛️', '💯', '🔆', '✅', '🛜', '💲', '👁️‍🗨️', '🔔', '💬'
 ]
 
 const MIN_SPEED = 0.75
 const MAX_SPEED = 1.9
-const MIN_SIZE = 36
-const MAX_SIZE = 72
+const MIN_SIZE = 54
+const MAX_SIZE = 108
 const SPAWN_ANIMATION_DURATION = 500 // ms
 
 // Elastic ease-out: overshoots then settles
@@ -47,8 +41,8 @@ function randomVelocity(): number {
   return Math.random() < 0.5 ? speed : -speed
 }
 
-const SPAWN_RADIUS_MIN = 150 // Spawn at least this far from button center
-const SPAWN_RADIUS_MAX = 250 // Spawn at most this far from button center
+const SPAWN_RADIUS_MIN = 225 // Spawn at least this far from button center
+const SPAWN_RADIUS_MAX = 375 // Spawn at most this far from button center
 
 export function createEmoji(canvasWidth: number, canvasHeight: number): Emoji {
   const size = randomRange(MIN_SIZE, MAX_SIZE)
