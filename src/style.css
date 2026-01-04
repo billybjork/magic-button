@@ -10,7 +10,7 @@ html, body {
   min-height: 100dvh;
   min-height: -webkit-fill-available;
   overflow: hidden;
-  background: #ebebeb;
+  background: #fff;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   -webkit-user-select: none;
