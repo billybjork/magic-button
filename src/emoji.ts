@@ -49,7 +49,7 @@ function randomVelocity(): number {
 const SPAWN_RADIUS_MIN_BASE = 225 // Spawn at least this far from button center
 const SPAWN_RADIUS_MAX_BASE = 375 // Spawn at most this far from button center
 
-export function createEmoji(canvasWidth: number, canvasHeight: number): Emoji {
+export function createEmoji(canvasWidth: number, canvasHeight: number, excludeChars: Set<string> = new Set()): Emoji {
   const scale = getScale()
   const size = randomRange(MIN_SIZE_BASE * scale, MAX_SIZE_BASE * scale)
 
@@ -62,12 +62,16 @@ export function createEmoji(canvasWidth: number, canvasHeight: number): Emoji {
   const x = centerX + Math.cos(angle) * distance
   const y = centerY + Math.sin(angle) * distance
 
+  // Filter out emojis that are already on screen
+  const availableEmojis = EMOJI_POOL.filter(e => !excludeChars.has(e))
+  const pool = availableEmojis.length > 0 ? availableEmojis : EMOJI_POOL
+
   return {
     x,
     y,
     vx: randomVelocity(),
     vy: randomVelocity(),
-    char: EMOJI_POOL[Math.floor(Math.random() * EMOJI_POOL.length)],
+    char: pool[Math.floor(Math.random() * pool.length)],
     size,
     spawnTime: performance.now()
   }

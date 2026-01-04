@@ -24,14 +24,18 @@ export class CanvasManager {
   }
 
   private handleResize(): void {
-    // Use clientWidth/Height to include iOS safe areas
-    this.canvas.width = this.canvas.clientWidth || window.innerWidth
-    this.canvas.height = this.canvas.clientHeight || window.innerHeight
+    this.canvas.width = window.innerWidth
+    this.canvas.height = window.innerHeight
   }
 
   spawnEmojis(count: number): void {
+    // Collect currently visible emoji characters to avoid duplicates
+    const onScreenChars = new Set(this.emojis.map(e => e.char))
+
     for (let i = 0; i < count; i++) {
-      this.emojis.push(createEmoji(this.canvas.width, this.canvas.height))
+      const newEmoji = createEmoji(this.canvas.width, this.canvas.height, onScreenChars)
+      onScreenChars.add(newEmoji.char) // Track newly spawned emoji too
+      this.emojis.push(newEmoji)
     }
   }
 
