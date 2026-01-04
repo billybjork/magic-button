@@ -91,8 +91,9 @@ export class DitherEffect {
   }
 
   private handleResize(): void {
-    this.canvas.width = window.innerWidth
-    this.canvas.height = window.innerHeight
+    // Use clientWidth/Height to include iOS safe areas
+    this.canvas.width = this.canvas.clientWidth || window.innerWidth
+    this.canvas.height = this.canvas.clientHeight || window.innerHeight
   }
 
   start(): void {
