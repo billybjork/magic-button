@@ -21,9 +21,14 @@ const EMOJI_POOL = [
 
 const MIN_SPEED = 0.75
 const MAX_SPEED = 1.9
-const MIN_SIZE = 54
-const MAX_SIZE = 108
+const MIN_SIZE_BASE = 54
+const MAX_SIZE_BASE = 108
 const SPAWN_ANIMATION_DURATION = 500 // ms
+const MOBILE_BREAKPOINT = 768
+
+function getScale(): number {
+  return window.innerWidth <= MOBILE_BREAKPOINT ? 0.5 : 1
+}
 
 // Elastic ease-out: overshoots then settles
 function elasticOut(t: number): number {
@@ -41,17 +46,18 @@ function randomVelocity(): number {
   return Math.random() < 0.5 ? speed : -speed
 }
 
-const SPAWN_RADIUS_MIN = 225 // Spawn at least this far from button center
-const SPAWN_RADIUS_MAX = 375 // Spawn at most this far from button center
+const SPAWN_RADIUS_MIN_BASE = 225 // Spawn at least this far from button center
+const SPAWN_RADIUS_MAX_BASE = 375 // Spawn at most this far from button center
 
 export function createEmoji(canvasWidth: number, canvasHeight: number): Emoji {
-  const size = randomRange(MIN_SIZE, MAX_SIZE)
+  const scale = getScale()
+  const size = randomRange(MIN_SIZE_BASE * scale, MAX_SIZE_BASE * scale)
 
   // Spawn in a ring around the button (which is centered)
   const centerX = canvasWidth / 2
   const centerY = canvasHeight / 2
   const angle = Math.random() * Math.PI * 2
-  const distance = randomRange(SPAWN_RADIUS_MIN, SPAWN_RADIUS_MAX)
+  const distance = randomRange(SPAWN_RADIUS_MIN_BASE * scale, SPAWN_RADIUS_MAX_BASE * scale)
 
   const x = centerX + Math.cos(angle) * distance
   const y = centerY + Math.sin(angle) * distance

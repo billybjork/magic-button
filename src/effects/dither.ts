@@ -6,9 +6,14 @@ const BAYER_4X4 = [
   [15 / 16, 7 / 16, 13 / 16, 5 / 16],
 ]
 
-const BTN_SIZE = 270
-const BTN_DEPTH = 21
-const BTN_RADIUS = 135
+const BTN_SIZE_BASE = 270
+const BTN_DEPTH_BASE = 21
+const BTN_RADIUS_BASE = 135
+const MOBILE_BREAKPOINT = 768
+
+function getScale(): number {
+  return window.innerWidth <= MOBILE_BREAKPOINT ? 0.5 : 1
+}
 
 export class DitherEffect {
   private canvas: HTMLCanvasElement
@@ -43,11 +48,12 @@ export class DitherEffect {
     const cy = this.canvas.height / 2
     const dx = x - cx
     const dy = y - cy
-    return Math.sqrt(dx * dx + dy * dy) <= BTN_RADIUS
+    return Math.sqrt(dx * dx + dy * dy) <= BTN_RADIUS_BASE * getScale()
   }
 
   private setupInteraction(): void {
-    window.addEventListener('mousemove', (e) => {
+    // Use pointer events for unified mouse/touch handling
+    window.addEventListener('pointermove', (e) => {
       const wasHovering = this.isHovering
       this.isHovering = this.isOverButton(e.clientX, e.clientY)
 
@@ -56,17 +62,28 @@ export class DitherEffect {
       }
     })
 
-    window.addEventListener('mousedown', (e) => {
+    window.addEventListener('pointerdown', (e) => {
       if (this.isOverButton(e.clientX, e.clientY)) {
         this.isPressed = true
+        // On touch devices, also set hovering to true when pressed
+        this.isHovering = true
       }
     })
 
-    window.addEventListener('mouseup', () => {
+    window.addEventListener('pointerup', (e) => {
       this.isPressed = false
+      // On touch devices, reset hover state when finger is lifted
+      if (e.pointerType === 'touch') {
+        this.isHovering = false
+      }
     })
 
-    window.addEventListener('mouseleave', () => {
+    window.addEventListener('pointercancel', () => {
+      this.isPressed = false
+      this.isHovering = false
+    })
+
+    window.addEventListener('pointerleave', () => {
       this.isHovering = false
       this.isPressed = false
       document.body.style.cursor = ''
@@ -109,13 +126,15 @@ export class DitherEffect {
   }
 
   private drawButton(): void {
+    const scale = getScale()
     const cx = this.canvas.width / 2
     const cy = this.canvas.height / 2
-    const radius = BTN_SIZE / 2
+    const radius = (BTN_SIZE_BASE / 2) * scale
+    const depth = BTN_DEPTH_BASE * scale
 
     // Calculate animated press offset
-    const pressOffset = this.animatedPress * 15
-    const shadowY = BTN_DEPTH + 6 - (this.animatedPress * 18)
+    const pressOffset = this.animatedPress * 15 * scale
+    const shadowY = depth + 6 * scale - (this.animatedPress * 18 * scale)
 
     // Shadow
     this.ctx.save()
@@ -142,8 +161,8 @@ export class DitherEffect {
     this.ctx.fill()
 
     // Red dome (front) - moves down when pressed
-    const domeRadius = radius - 21
-    const domeY = cy - BTN_DEPTH + pressOffset
+    const domeRadius = radius - 21 * scale
+    const domeY = cy - depth + pressOffset
 
     // Brighten colors on hover (animated)
     const brightness = 1.0 + (this.animatedHover * 0.1)
@@ -184,14 +203,14 @@ export class DitherEffect {
 
     // Text
     this.ctx.fillStyle = 'white'
-    this.ctx.font = '900 33px "Arial Black", "Helvetica Neue", sans-serif'
+    this.ctx.font = `900 ${33 * scale}px "Arial Black", "Helvetica Neue", sans-serif`
     this.ctx.textAlign = 'center'
     this.ctx.textBaseline = 'middle'
     this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'
-    this.ctx.shadowBlur = 4
-    this.ctx.shadowOffsetY = 3
-    this.ctx.fillText('COMING', cx, domeY - 18)
-    this.ctx.fillText('SOON', cx, domeY + 18)
+    this.ctx.shadowBlur = 4 * scale
+    this.ctx.shadowOffsetY = 3 * scale
+    this.ctx.fillText('COMING', cx, domeY - 18 * scale)
+    this.ctx.fillText('SOON', cx, domeY + 18 * scale)
     this.ctx.shadowColor = 'transparent'
   }
 

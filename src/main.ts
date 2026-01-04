@@ -14,15 +14,19 @@ const dither = new DitherEffect(canvas)
 dither.start()
 
 // Handle clicks on the button area
-const BTN_RADIUS = 135
+const BTN_RADIUS_BASE = 135
+const MOBILE_BREAKPOINT = 768
+
 canvas.parentElement!.addEventListener('click', (e) => {
+  const scale = window.innerWidth <= MOBILE_BREAKPOINT ? 0.5 : 1
+  const btnRadius = BTN_RADIUS_BASE * scale
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
   const dx = e.clientX - cx
   const dy = e.clientY - cy
   const distance = Math.sqrt(dx * dx + dy * dy)
 
-  if (distance <= BTN_RADIUS) {
+  if (distance <= btnRadius) {
     manager.spawnEmojis(1)
   }
 })
