@@ -1,7 +1,7 @@
 import { Emoji, createEmoji, updateEmoji, drawEmoji, bounceOffButton, bounceEmojisOffEachOther } from './emoji'
 
 const BUTTON_RADIUS_BASE = 144 // Includes silver rim + small buffer
-const BUTTON_OFFSET_Y_BASE = 12 // Offset collision down to match 3D visual depth
+const BUTTON_OFFSET_Y_BASE = 20 // Offset collision down to match 3D visual depth
 const MOBILE_BREAKPOINT = 768
 
 function getScale(): number {
@@ -12,7 +12,6 @@ export class CanvasManager {
   private canvas: HTMLCanvasElement
   private ctx: CanvasRenderingContext2D
   private emojis: Emoji[] = []
-  private animationId: number | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -40,7 +39,11 @@ export class CanvasManager {
     }
   }
 
-  private update(): void {
+  getEmojis(): Emoji[] {
+    return this.emojis
+  }
+
+  update(): void {
     const scale = getScale()
     const btnX = this.canvas.width / 2
     const btnY = this.canvas.height / 2 + BUTTON_OFFSET_Y_BASE * scale
@@ -54,29 +57,10 @@ export class CanvasManager {
     bounceEmojisOffEachOther(this.emojis)
   }
 
-  private draw(): void {
+  draw(): void {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
     for (const emoji of this.emojis) {
       drawEmoji(this.ctx, emoji)
-    }
-  }
-
-  private loop = (): void => {
-    this.update()
-    this.draw()
-    this.animationId = requestAnimationFrame(this.loop)
-  }
-
-  start(): void {
-    if (this.animationId === null) {
-      this.loop()
-    }
-  }
-
-  stop(): void {
-    if (this.animationId !== null) {
-      cancelAnimationFrame(this.animationId)
-      this.animationId = null
     }
   }
 }

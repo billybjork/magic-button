@@ -1,3 +1,5 @@
+import type { Emoji } from '../emoji'
+
 // 4x4 Bayer ordered dithering matrix (normalized 0-1)
 const BAYER_4X4 = [
   [0 / 16, 8 / 16, 2 / 16, 10 / 16],
@@ -19,10 +21,11 @@ export class DitherEffect {
   private canvas: HTMLCanvasElement
   private ctx: CanvasRenderingContext2D
   private sourceCanvas: HTMLCanvasElement
-  private animationId: number | null = null
-  private pixelSize = 1 // No pixelation, just dithering
-  private colorLevels = 3 // Moderate color gradations
-  private ditherStrength = 0.7 // Moderate pattern strength
+  private colorLevels = 2  // Quantized for dithering
+  private ditherStrength = 0.7
+
+  // Emoji data for directional chromatic aberration
+  private emojis: Emoji[] = []
 
   // Button interaction state
   private isHovering = false
@@ -31,6 +34,11 @@ export class DitherEffect {
   // Animated values (for smooth transitions)
   private animatedPress = 0 // 0 = not pressed, 1 = fully pressed
   private animatedHover = 0 // 0 = not hovering, 1 = fully hovering
+
+  // Cached arrays to avoid allocation each frame
+  private cachedOriginalData: Uint8ClampedArray | null = null
+  private cachedWidth = 0
+  private cachedHeight = 0
 
   constructor(sourceCanvas: HTMLCanvasElement) {
     this.sourceCanvas = sourceCanvas
@@ -41,6 +49,10 @@ export class DitherEffect {
     this.handleResize()
     window.addEventListener('resize', () => this.handleResize())
     this.setupInteraction()
+  }
+
+  setEmojis(emojis: Emoji[]): void {
+    this.emojis = emojis
   }
 
   private isOverButton(x: number, y: number): boolean {
@@ -95,19 +107,8 @@ export class DitherEffect {
     this.canvas.height = window.innerHeight
   }
 
-  start(): void {
-    const loop = () => {
-      this.applyDither()
-      this.animationId = requestAnimationFrame(loop)
-    }
-    loop()
-  }
-
-  stop(): void {
-    if (this.animationId !== null) {
-      cancelAnimationFrame(this.animationId)
-      this.animationId = null
-    }
+  render(): void {
+    this.applyDither()
   }
 
   private updateAnimations(): void {
@@ -220,9 +221,11 @@ export class DitherEffect {
 
     const width = this.canvas.width
     const height = this.canvas.height
-    const px = this.pixelSize
 
-    // Fill with light gray background so dither pattern is visible
+    const levels = this.colorLevels
+    const strength = this.ditherStrength
+
+    // Fill with light gray background
     this.ctx.fillStyle = '#ebebeb'
     this.ctx.fillRect(0, 0, width, height)
 
@@ -236,42 +239,128 @@ export class DitherEffect {
     const imageData = this.ctx.getImageData(0, 0, width, height)
     const data = imageData.data
 
-    const levels = this.colorLevels
-    const strength = this.ditherStrength
+    // Reuse cached array if dimensions match, otherwise allocate
+    const dataLength = data.length
+    if (this.cachedOriginalData === null ||
+        this.cachedWidth !== width ||
+        this.cachedHeight !== height) {
+      this.cachedOriginalData = new Uint8ClampedArray(dataLength)
+      this.cachedWidth = width
+      this.cachedHeight = height
+    }
+    const originalData = this.cachedOriginalData
+    originalData.set(data)
 
-    // Process in blocks for coarser effect
-    for (let by = 0; by < height; by += px) {
-      for (let bx = 0; bx < width; bx += px) {
-        // Sample center of block
-        const sx = Math.min(bx + Math.floor(px / 2), width - 1)
-        const sy = Math.min(by + Math.floor(px / 2), height - 1)
-        const si = (sy * width + sx) * 4
+    const chromaticStrength = 4
 
-        // Get Bayer threshold for this block
-        const threshold = (BAYER_4X4[(by / px) % 4][(bx / px) % 4] - 0.5) * strength
+    // Button area for excluding chromatic aberration
+    const scale = getScale()
+    const btnCx = width / 2
+    const btnCy = height / 2
+    const btnRadius = (BTN_SIZE_BASE / 2) * scale
 
-        // Calculate dithered color for this block
-        const r = data[si] / 255
-        const g = data[si + 1] / 255
-        const b = data[si + 2] / 255
+    // Pre-calculate emoji bounds for chromatic effect
+    const emojiRadiusFactor = 0.5
+    const emojiData = this.emojis.map(e => {
+      const speed = Math.sqrt(e.vx * e.vx + e.vy * e.vy)
+      const radius = e.size * emojiRadiusFactor
+      return {
+        x: e.x,
+        y: e.y,
+        radius,
+        // Bounding box for quick rejection
+        minX: Math.max(0, Math.floor(e.x - radius - chromaticStrength)),
+        maxX: Math.min(width - 1, Math.ceil(e.x + radius + chromaticStrength)),
+        minY: Math.max(0, Math.floor(e.y - radius - chromaticStrength)),
+        maxY: Math.min(height - 1, Math.ceil(e.y + radius + chromaticStrength)),
+        vx: speed > 0 ? (e.vx / speed) * chromaticStrength : 0,
+        vy: speed > 0 ? (e.vy / speed) * chromaticStrength : 0,
+      }
+    })
 
-        const newR = Math.round((r + threshold) * (levels - 1)) / (levels - 1)
-        const newG = Math.round((g + threshold) * (levels - 1)) / (levels - 1)
-        const newB = Math.round((b + threshold) * (levels - 1)) / (levels - 1)
+    // Pre-calculate for dithering
+    const levelsM1 = levels - 1
+    const invLevelsM1 = 1 / levelsM1
+    const inv255 = 1 / 255
 
-        const finalR = Math.max(0, Math.min(255, newR * 255))
-        const finalG = Math.max(0, Math.min(255, newG * 255))
-        const finalB = Math.max(0, Math.min(255, newB * 255))
+    // OPTIMIZATION: First pass - apply dithering to ALL pixels (no emoji check)
+    for (let y = 0; y < height; y++) {
+      const yOffset = y * width
+      const bayerRow = BAYER_4X4[y & 3]
 
-        // Apply to all pixels in block
-        for (let py = by; py < Math.min(by + px, height); py++) {
-          for (let pxx = bx; pxx < Math.min(bx + px, width); pxx++) {
-            const i = (py * width + pxx) * 4
-            data[i] = finalR
-            data[i + 1] = finalG
-            data[i + 2] = finalB
-            data[i + 3] = 255
-          }
+      for (let x = 0; x < width; x++) {
+        const i = (yOffset + x) << 2
+
+        const r = originalData[i] * inv255
+        const g = originalData[i + 1] * inv255
+        const b = originalData[i + 2] * inv255
+
+        const threshold = (bayerRow[x & 3] - 0.5) * strength
+
+        let newR = Math.round((r + threshold) * levelsM1) * invLevelsM1 * 255
+        let newG = Math.round((g + threshold) * levelsM1) * invLevelsM1 * 255
+        let newB = Math.round((b + threshold) * levelsM1) * invLevelsM1 * 255
+
+        // Clamp
+        if (newR < 0) newR = 0; else if (newR > 255) newR = 255
+        if (newG < 0) newG = 0; else if (newG > 255) newG = 255
+        if (newB < 0) newB = 0; else if (newB > 255) newB = 255
+
+        data[i] = newR
+        data[i + 1] = newG
+        data[i + 2] = newB
+        data[i + 3] = 255
+      }
+    }
+
+    // OPTIMIZATION: Second pass - apply chromatic aberration ONLY to emoji bounding boxes
+    for (const emoji of emojiData) {
+      const radiusSq = emoji.radius * emoji.radius
+
+      for (let y = emoji.minY; y <= emoji.maxY; y++) {
+        const yOffset = y * width
+        const ey = y - emoji.y
+        const eySq = ey * ey
+
+        // Skip row if outside button
+        const dy = y - btnCy
+        const bayerRow = BAYER_4X4[y & 3]
+
+        for (let x = emoji.minX; x <= emoji.maxX; x++) {
+          const ex = x - emoji.x
+
+          // Check if pixel is within emoji circle
+          if (ex * ex + eySq > radiusSq) continue
+
+          // Check if pixel is inside button (skip chromatic aberration)
+          const dx = x - btnCx
+          if (dx * dx + dy * dy <= btnRadius * btnRadius) continue
+
+          const i = (yOffset + x) << 2
+
+          // Sample with chromatic offset (inverted direction)
+          const rX = Math.max(0, Math.min(width - 1, Math.round(x + emoji.vx)))
+          const rY = Math.max(0, Math.min(height - 1, Math.round(y + emoji.vy)))
+          const bX = Math.max(0, Math.min(width - 1, Math.round(x - emoji.vx)))
+          const bY = Math.max(0, Math.min(height - 1, Math.round(y - emoji.vy)))
+
+          const r = originalData[(rY * width + rX) << 2] * inv255
+          const g = originalData[i + 1] * inv255
+          const b = originalData[((bY * width + bX) << 2) + 2] * inv255
+
+          const threshold = (bayerRow[x & 3] - 0.5) * strength
+
+          let newR = Math.round((r + threshold) * levelsM1) * invLevelsM1 * 255
+          let newG = Math.round((g + threshold) * levelsM1) * invLevelsM1 * 255
+          let newB = Math.round((b + threshold) * levelsM1) * invLevelsM1 * 255
+
+          if (newR < 0) newR = 0; else if (newR > 255) newR = 255
+          if (newG < 0) newG = 0; else if (newG > 255) newG = 255
+          if (newB < 0) newB = 0; else if (newB > 255) newB = 255
+
+          data[i] = newR
+          data[i + 1] = newG
+          data[i + 2] = newB
         }
       }
     }

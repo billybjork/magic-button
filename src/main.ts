@@ -7,11 +7,19 @@ const manager = new CanvasManager(canvas)
 
 // Start with some emojis
 manager.spawnEmojis(5)
-manager.start()
 
-// Start dither effect
+// Dither effect (no separate loop - we'll drive it from one unified loop)
 const dither = new DitherEffect(canvas)
-dither.start()
+
+// Single unified animation loop instead of three separate ones
+function mainLoop() {
+  manager.update()
+  manager.draw()
+  dither.setEmojis(manager.getEmojis())
+  dither.render()
+  requestAnimationFrame(mainLoop)
+}
+mainLoop()
 
 // Handle clicks on the button area
 const BTN_RADIUS_BASE = 135
