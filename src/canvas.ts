@@ -18,6 +18,7 @@ interface VelocityPoint {
 const VELOCITY_HISTORY_SIZE = 5
 const MAX_THROW_SPEED = 8
 const MIN_THROW_SPEED = 0.5
+const HOVER_SCALE_TARGET = 1.08
 const GRAB_SCALE_TARGET = 1.15
 const GRAB_SCALE_SPEED = 0.2
 
@@ -28,8 +29,8 @@ export class CanvasManager {
 
   // Drag state
   private draggedEmoji: Emoji | null = null
+  private hoveredEmoji: Emoji | null = null
   private velocityHistory: VelocityPoint[] = []
-  private isOverEmoji = false
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -85,14 +86,13 @@ export class CanvasManager {
         this.velocityHistory.shift()
       }
     } else {
-      // Show grab cursor when hovering over an emoji
-      const emoji = findEmojiAtPosition(this.emojis, e.clientX, e.clientY)
-      const wasOverEmoji = this.isOverEmoji
-      this.isOverEmoji = emoji !== null
+      // Track hovered emoji for cursor and scale effect
+      const prevHovered = this.hoveredEmoji
+      this.hoveredEmoji = findEmojiAtPosition(this.emojis, e.clientX, e.clientY)
 
-      if (this.isOverEmoji && !wasOverEmoji) {
+      if (this.hoveredEmoji && !prevHovered) {
         document.body.style.cursor = 'grab'
-      } else if (!this.isOverEmoji && wasOverEmoji) {
+      } else if (!this.hoveredEmoji && prevHovered) {
         document.body.style.cursor = ''
       }
     }
@@ -171,8 +171,13 @@ export class CanvasManager {
     const btnRadius = BUTTON_RADIUS_BASE * scale
 
     for (const emoji of this.emojis) {
-      // Animate grab scale
-      const targetScale = emoji === this.draggedEmoji ? GRAB_SCALE_TARGET : 1
+      // Animate grab/hover scale
+      let targetScale = 1
+      if (emoji === this.draggedEmoji) {
+        targetScale = GRAB_SCALE_TARGET
+      } else if (emoji === this.hoveredEmoji) {
+        targetScale = HOVER_SCALE_TARGET
+      }
       emoji.grabScale += (targetScale - emoji.grabScale) * GRAB_SCALE_SPEED
 
       // Skip physics for the emoji being dragged
