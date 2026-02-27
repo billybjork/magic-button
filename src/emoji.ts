@@ -6,6 +6,7 @@ export interface Emoji {
   char: string
   size: number
   spawnTime: number
+  grabScale: number
 }
 
 const EMOJI_POOL = [
@@ -73,7 +74,8 @@ export function createEmoji(canvasWidth: number, canvasHeight: number, excludeCh
     vy: randomVelocity(),
     char: pool[Math.floor(Math.random() * pool.length)],
     size,
-    spawnTime: performance.now()
+    spawnTime: performance.now(),
+    grabScale: 1
   }
 }
 
@@ -115,6 +117,20 @@ export function drawEmoji(ctx: CanvasRenderingContext2D, emoji: Emoji): void {
 
 // Emojis don't fill their full bounding box, so use a tighter collision radius
 const EMOJI_RADIUS_FACTOR = 0.42
+
+export function findEmojiAtPosition(emojis: Emoji[], x: number, y: number): Emoji | null {
+  // Check in reverse order so topmost (last rendered) emoji is found first
+  for (let i = emojis.length - 1; i >= 0; i--) {
+    const emoji = emojis[i]
+    const radius = emoji.size * EMOJI_RADIUS_FACTOR
+    const dx = x - emoji.x
+    const dy = y - emoji.y
+    if (dx * dx + dy * dy <= radius * radius) {
+      return emoji
+    }
+  }
+  return null
+}
 
 export function bounceOffButton(
   emoji: Emoji,
