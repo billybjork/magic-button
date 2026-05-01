@@ -202,17 +202,6 @@ export class DitherEffect {
     this.ctx.arc(cx, domeY, domeRadius, 0, Math.PI * 2)
     this.ctx.fill()
 
-    // Text
-    this.ctx.fillStyle = 'white'
-    this.ctx.font = `900 ${33 * scale}px "Arial Black", "Helvetica Neue", sans-serif`
-    this.ctx.textAlign = 'center'
-    this.ctx.textBaseline = 'middle'
-    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'
-    this.ctx.shadowBlur = 4 * scale
-    this.ctx.shadowOffsetY = 3 * scale
-    this.ctx.fillText('COMING', cx, domeY - 18 * scale)
-    this.ctx.fillText('SOON', cx, domeY + 18 * scale)
-    this.ctx.shadowColor = 'transparent'
   }
 
   private applyDither(): void {
